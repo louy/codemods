@@ -1,3 +1,7 @@
+/**
+ * Rewrite tests that use react-test-renderer to use enzyme instead
+ */
+
 const addImport = require('./utils/addImport');
 const findImports = require('./utils/findImports');
 
@@ -6,13 +10,20 @@ module.exports = function reactTestRendererToEnzyme(file, api) {
   const root = j(file.source);
 
   const replaceTestRendererWrapper = (declaratorPath, { enzymeToJson }) => {
-    root.find(j.Identifier, { name: declaratorPath.node.id.name })
-    .filter(path => path.parent.node.type !== 'VariableDeclarator')
-    .filter(path => path.scope.lookup(path.node.name) === declaratorPath.scope)
+    root
+      .find(j.Identifier, { name: declaratorPath.node.id.name })
+      .filter(path => path.parent.node.type !== 'VariableDeclarator')
+      .filter(path => path.scope.lookup(path.node.name) === declaratorPath.scope)
       .forEach((path) => {
-        if (path.parent.node.type !== 'MemberExpression') { throw new Error(`Unknown expression type: ${path.parent.node.type}`); }
-        if (path.parent.node.property.name !== 'toJSON') { throw new Error(`Unknown method: ${path.parent.node.property.name}`); }
-        if (path.parent.parent.node.type !== 'CallExpression') { throw new Error(`Unknown expression type: ${path.parent.node.type}`); }
+        if (path.parent.node.type !== 'MemberExpression') {
+          throw new Error(`Unknown expression type: ${path.parent.node.type}`);
+        }
+        if (path.parent.node.property.name !== 'toJSON') {
+          throw new Error(`Unknown method: ${path.parent.node.property.name}`);
+        }
+        if (path.parent.parent.node.type !== 'CallExpression') {
+          throw new Error(`Unknown expression type: ${path.parent.node.type}`);
+        }
 
         const replacement = j.callExpression(j.identifier(enzymeToJson), [path.node]);
         j(path.parent.parent).replaceWith(replacement);
@@ -24,8 +35,12 @@ module.exports = function reactTestRendererToEnzyme(file, api) {
       .find(j.Identifier, { name })
       .filter(path => path.parent.node.type !== 'ImportDefaultSpecifier')
       .forEach((path) => {
-        if (path.parent.node.type !== 'MemberExpression') { throw new Error(`Unknown expression type: ${path.parent.node.type}`); }
-        if (path.parent.node.property.name !== 'create') { throw new Error(`Unknown method: ${path.parent.node.property.name}`); }
+        if (path.parent.node.type !== 'MemberExpression') {
+          throw new Error(`Unknown expression type: ${path.parent.node.type}`);
+        }
+        if (path.parent.node.property.name !== 'create') {
+          throw new Error(`Unknown method: ${path.parent.node.property.name}`);
+        }
 
         if (path.parent.parent.parent.node.type === 'VariableDeclarator') {
           replaceTestRendererWrapper(path.parent.parent.parent, { enzymeToJson });
@@ -42,7 +57,9 @@ module.exports = function reactTestRendererToEnzyme(file, api) {
       .find(j.Identifier, { name })
       .filter(path => path.parent.node.type !== 'ImportSpecifier')
       .forEach((path) => {
-        if (path.parent.node.type !== 'CallExpression') { throw new Error(`Unknown expression type: ${path.parent.node.type}`); }
+        if (path.parent.node.type !== 'CallExpression') {
+          throw new Error(`Unknown expression type: ${path.parent.node.type}`);
+        }
         if (path.parent.parent.node.type === 'VariableDeclarator') {
           replaceTestRendererWrapper(path.parent.parent, { enzymeToJson });
         }
